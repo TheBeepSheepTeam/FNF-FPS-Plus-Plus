@@ -1,5 +1,7 @@
 package freeplay;
 
+import openfl.media.SoundMixer;
+import openfl.Assets;
 import haxe.Json;
 import transition.data.InstantTransition;
 import sys.FileSystem;
@@ -14,7 +16,6 @@ import flixel.util.FlxTimer;
 import flixel.FlxCamera;
 import flixel.math.FlxPoint;
 import config.*;
-
 import title.TitleScreen;
 import flixel.FlxG;
 import flixel.FlxObject;
@@ -30,9 +31,21 @@ import extensions.flixel.FlxTextExt;
 
 using StringTools;
 
+typedef FreeplaySongShit =
+{
+	var song:String;
+	var icon:String;
+	var week:Int;
+	var categories:Array<String>;
+}
+
+typedef FreeplayJsonShit =
+{
+	var songs:Array<FreeplaySongShit>;
+}
+
 class FreeplayState extends MusicBeatState
 {
-
 	var bg:FlxSprite;
 	var flash:FlxSprite;
 	var cover:FlxSprite;
@@ -55,7 +68,7 @@ class FreeplayState extends MusicBeatState
 	var albumDummy:FlxObject;
 	var albumTime:Float = 0;
 	var curAlbum:String = "vol1";
-	final ablumPeriod:Float = 1/24;
+	final ablumPeriod:Float = 1 / 24;
 
 	var capsuleGroup:FlxTypedSpriteGroup<Capsule> = new FlxTypedSpriteGroup<Capsule>();
 
@@ -94,45 +107,52 @@ class FreeplayState extends MusicBeatState
 
 	var afkTimer:Float = 0;
 	var nextAfkTime:Float = 5;
+
 	static final minAfkTime:Float = 9;
 	static final maxAfkTime:Float = 27;
 
-	static final freeplaySong:String = "freeplayRandom"; 
-	static final freeplaySongBpm:Float = 145; 
-	static final freeplaySongVolume:Float = 0.8; 
+	static final freeplaySong:String = "freeplayRandom";
+	static final freeplaySongBpm:Float = 145;
+	static final freeplaySongVolume:Float = 0.8;
 
-	static final  transitionTime:Float = 1;
-	static final  staggerTime:Float = 0.1;
-	static final  randomVariation:Float = 0.04;
-	static final  transitionEase:flixel.tweens.EaseFunction = FlxEase.quintOut;
+	static final transitionTime:Float = 1;
+	static final staggerTime:Float = 0.1;
+	static final randomVariation:Float = 0.04;
+	static final transitionEase:flixel.tweens.EaseFunction = FlxEase.quintOut;
 
-	static final  transitionTimeExit:Float = 0.7;
-	static final  staggerTimeExit:Float = 0.07;
-	static final  randomVariationExit:Float = 0.03;
-	static final  transitionEaseExit:flixel.tweens.EaseFunction = FlxEase.cubeIn;
+	static final transitionTimeExit:Float = 0.7;
+	static final staggerTimeExit:Float = 0.07;
+	static final randomVariationExit:Float = 0.03;
+	static final transitionEaseExit:flixel.tweens.EaseFunction = FlxEase.cubeIn;
 
-	public function new(?_transitionFromMenu:Bool = false, ?camFollowPos:FlxPoint = null) {
+	public static var jsonParseShit:FreeplayJsonShit;
+
+	public function new(?_transitionFromMenu:Bool = false, ?camFollowPos:FlxPoint = null)
+	{
 		super();
 		transitionFromMenu = _transitionFromMenu;
-		if(camFollowPos == null){
+		if (camFollowPos == null)
+		{
 			camFollowPos = new FlxPoint();
 		}
 		camFollow = new FlxObject(camFollowPos.x, camFollowPos.y, 1, 1);
 	}
 
-	override function create(){
-
+	override function create()
+	{
 		Config.setFramerate(144);
 
 		persistentUpdate = persistentDraw = true;
 
 		nextAfkTime = FlxG.random.float(minAfkTime, maxAfkTime);
 
-		if(transitionFromMenu){
-			if(FlxG.sound.music.playing){
+		if (transitionFromMenu)
+		{
+			if (FlxG.sound.music.playing)
+			{
 				FlxG.sound.music.volume = 0;
 			}
-			//FlxG.sound.play(Paths.sound("freeplay/recordStop"));
+			// FlxG.sound.play(Paths.sound("freeplay/recordStop"));
 			FlxG.sound.play(Paths.sound('confirmMenu'));
 		}
 
@@ -145,10 +165,12 @@ class FreeplayState extends MusicBeatState
 		FlxG.cameras.add(camFreeplay, true);
 		FlxG.cameras.setDefaultDrawTarget(camMenu, false);
 
-		if(transitionFromMenu){
+		if (transitionFromMenu)
+		{
 			customTransIn = new transition.data.InstantTransition();
 		}
-		else if(playStickerIntro){
+		else if (playStickerIntro)
+		{
 			customTransIn = new transition.data.StickerIn();
 			playStickerIntro = false;
 		}
@@ -195,7 +217,7 @@ class FreeplayState extends MusicBeatState
 		addSong("2hot", "darnell", 101, ["ALL", "Weekend 1"]);
 		addSong("Blazin", "darnell", 101, ["ALL", "Weekend 1"]);
 
-		//ERECT SONGS!!!!
+		// ERECT SONGS!!!!
 
 		addSong("Bopeebo-Erect", "dad", 1, ["ERECT", "Week 1"]);
 		addSong("Fresh-Erect", "dad", 1, ["ERECT", "Week 1"]);
@@ -210,73 +232,88 @@ class FreeplayState extends MusicBeatState
 
 		addSong("Satin-Panties-Erect", "mom", 4, ["ERECT", "Week 4"]);
 		addSong("High-Erect", "mom", 4, ["ERECT", "Week 4"]);
-		
+
 		addSong("Eggnog-Erect", "parents-christmas", 5, ["ERECT", "Week 5"]);
 
 		addSong("Senpai-Erect", "senpai", 6, ["ERECT", "Week 6"]);
 		addSong("Roses-Erect", "senpai", 6, ["ERECT", "Week 6"]);
 		addSong("Thorns-Erect", "spirit", 6, ["ERECT", "Week 6"]);
 
-		//LIL BUDDIES :D
+		// LIL BUDDIES :D
 
 		SaveManager.global();
-		if(Config.ee2 && Startup.hasEe2){
+		if (Config.ee2 && Startup.hasEe2)
+		{
 			addSong("Lil-Buddies", "bf", 0, ["Secret"]);
 			addSong("Lil-Buddies-Erect", "bf", 0, [/*"ERECT",*/ "Secret"]);
 		}
 
+		jsonParseShit = Json.parse(Assets.getText(Paths.json('freeplaySongList')));
+
+		for (songs in jsonParseShit.songs)
+			addSong(songs.song, songs.icon, songs.week, songs.categories);
+
 		super.create();
-	} 
+	}
 
-
-
-	override function update(elapsed:Float){
-
-		if(waitForFirstUpdateToStart){
+	override function update(elapsed:Float)
+	{
+		if (waitForFirstUpdateToStart)
+		{
 			createFreeplayStuff();
 			waitForFirstUpdateToStart = false;
 		}
 
-		if(FlxG.sound.music.playing){
+		if (FlxG.sound.music.playing)
+		{
 			Conductor.songPosition = FlxG.sound.music.time;
 		}
 
 		albumTime += elapsed;
-		if(albumTime >= ablumPeriod){
+		if (albumTime >= ablumPeriod)
+		{
 			albumTime = 0;
 			album.setPosition(albumDummy.x, albumDummy.y);
 			album.angle = albumDummy.angle;
 		}
 
-		if(transitionOver){
-			if(Binds.justPressed("menuUp")){
+		if (transitionOver)
+		{
+			if (Binds.justPressed("menuUp"))
+			{
 				changeSelected(-1);
 				FlxG.sound.play(Paths.sound('scrollMenu'));
 			}
-			else if(Binds.justPressed("menuDown")){
+			else if (Binds.justPressed("menuDown"))
+			{
 				changeSelected(1);
 				FlxG.sound.play(Paths.sound('scrollMenu'));
 			}
 
-			if(Binds.justPressed("menuLeft")){
+			if (Binds.justPressed("menuLeft"))
+			{
 				changeDifficulty(-1);
 				FlxG.sound.play(Paths.sound('scrollMenu'));
 			}
-			else if(Binds.justPressed("menuRight")){
+			else if (Binds.justPressed("menuRight"))
+			{
 				changeDifficulty(1);
 				FlxG.sound.play(Paths.sound('scrollMenu'));
 			}
 
-			if(Binds.justPressed("menuCycleLeft")){
+			if (Binds.justPressed("menuCycleLeft"))
+			{
 				changeCategory(-1);
 				FlxG.sound.play(Paths.sound('scrollMenu'));
 			}
-			else if(Binds.justPressed("menuCycleRight")){
+			else if (Binds.justPressed("menuCycleRight"))
+			{
 				changeCategory(1);
 				FlxG.sound.play(Paths.sound('scrollMenu'));
 			}
 
-			if(Binds.justPressed("menuAccept")){
+			if (Binds.justPressed("menuAccept"))
+			{
 				transitionOver = false;
 				setUpScrollingTextAccept();
 				addScrollingText();
@@ -288,40 +325,70 @@ class FreeplayState extends MusicBeatState
 				dj.playAnim("confirm", true);
 				startSong();
 			}
-	
-			for(i in 0...categoryMap[categoryNames[curCategory]].length){
+
+			for (i in 0...categoryMap[categoryNames[curCategory]].length)
+			{
 				updateCapsulePosition(i);
 			}
-	
-			if(Binds.pressed("menuLeft")){ arrowLeft.scale.set(0.8, 0.8); }
-			else{ arrowLeft.scale.set(1, 1); }
-	
-			if(Binds.pressed("menuRight")){ arrowRight.scale.set(0.8, 0.8); }
-			else{ arrowRight.scale.set(1, 1); }
 
-			if(Binds.pressed("menuCycleLeft")){ miniArrowLeft.scale.set(0.6, 0.6); }
-			else{ miniArrowLeft.scale.set(1, 1); }
-	
-			if(Binds.pressed("menuCycleRight")){ miniArrowRight.scale.set(0.6, 0.6); }
-			else{ miniArrowRight.scale.set(1, 1); }
-	
-			if(Binds.justPressed("menuBack")){
+			if (Binds.pressed("menuLeft"))
+			{
+				arrowLeft.scale.set(0.8, 0.8);
+			}
+			else
+			{
+				arrowLeft.scale.set(1, 1);
+			}
+
+			if (Binds.pressed("menuRight"))
+			{
+				arrowRight.scale.set(0.8, 0.8);
+			}
+			else
+			{
+				arrowRight.scale.set(1, 1);
+			}
+
+			if (Binds.pressed("menuCycleLeft"))
+			{
+				miniArrowLeft.scale.set(0.6, 0.6);
+			}
+			else
+			{
+				miniArrowLeft.scale.set(1, 1);
+			}
+
+			if (Binds.pressed("menuCycleRight"))
+			{
+				miniArrowRight.scale.set(0.6, 0.6);
+			}
+			else
+			{
+				miniArrowRight.scale.set(1, 1);
+			}
+
+			if (Binds.justPressed("menuBack"))
+			{
 				transitionOver = false;
 				FlxG.sound.play(Paths.sound('cancelMenu'));
-				FlxG.sound.music.fadeOut(0.5, 0, function(t) {
+				FlxG.sound.music.fadeOut(0.5, 0, function(t)
+				{
 					FlxG.sound.music.stop();
 				});
 				exitAnimation();
 				customTransOut = new InstantTransition();
 				MainMenuState.fromFreeplay = true;
-				new FlxTimer().start(transitionTimeExit + (staggerTimeExit*4), function(t) {
+				new FlxTimer().start(transitionTimeExit + (staggerTimeExit * 4), function(t)
+				{
 					switchState(new MainMenuState());
 				});
 			}
 
-			if(dj.curAnim == "idle"){
+			if (dj.curAnim == "idle")
+			{
 				afkTimer += elapsed;
-				if(afkTimer >= nextAfkTime){
+				if (afkTimer >= nextAfkTime)
+				{
 					trace("random idle set");
 					afkTimer = 0;
 					nextAfkTime = nextAfkTime = FlxG.random.float(minAfkTime, maxAfkTime);
@@ -329,37 +396,38 @@ class FreeplayState extends MusicBeatState
 				}
 			}
 
-			//big if
-			if(Binds.justPressed("menuUp")||Binds.justPressed("menuDown")||Binds.justPressed("menuLeft")||Binds.justPressed("menuRight")||Binds.justPressed("menuCycleLeft")||Binds.justPressed("menuCycleRight")){
+			// big if
+			if (Binds.justPressed("menuUp") || Binds.justPressed("menuDown") || Binds.justPressed("menuLeft") || Binds.justPressed("menuRight")
+				|| Binds.justPressed("menuCycleLeft") || Binds.justPressed("menuCycleRight"))
+			{
 				pressedAnything();
 			}
 		}
 
-		//if(FlxG.keys.justPressed.ONE){ difficultyStars.setNumber(FlxG.random.int(0, 20)); }
-		
+		// if(FlxG.keys.justPressed.ONE){ difficultyStars.setNumber(FlxG.random.int(0, 20)); }
+
 		camFollow.x = Utils.fpsAdjsutedLerp(camFollow.x, camTarget.x, MainMenuState.lerpSpeed);
 		camFollow.y = Utils.fpsAdjsutedLerp(camFollow.y, camTarget.y, MainMenuState.lerpSpeed);
 
 		super.update(elapsed);
-
 	}
 
-	override function beatHit() {
+	override function beatHit()
+	{
 		dj.beat(curBeat);
 		super.beatHit();
 	}
 
-	function pressedAnything():Void{
+	function pressedAnything():Void
+	{
 		afkTimer = 0;
 		nextAfkTime = nextAfkTime = FlxG.random.float(minAfkTime, maxAfkTime);
 		dj.doRandomIdle = false;
 		dj.buttonPress();
 	}
 
-
-
-	function createFreeplayStuff():Void{
-		
+	function createFreeplayStuff():Void
+	{
 		bg = new FlxSprite().loadGraphic(Paths.image('menu/freeplay/bgs/yellow'));
 		bg.antialiasing = true;
 
@@ -404,7 +472,7 @@ class FreeplayState extends MusicBeatState
 		album = new FlxSprite(albumDummy.x, albumDummy.y).loadGraphic(Paths.image("menu/freeplay/album/vol1/album"));
 		album.antialiasing = true;
 		album.angle = albumDummy.angle;
-		
+
 		albumTitle = new FlxSprite(album.x - 5, album.y + 205).loadGraphic(Paths.image("menu/freeplay/album/vol1/title"));
 		albumTitle.antialiasing = true;
 
@@ -422,7 +490,7 @@ class FreeplayState extends MusicBeatState
 		arrowRight.antialiasing = true;
 
 		difficulty = new FlxSprite(197, 115).loadGraphic(Paths.image("menu/freeplay/diff/" + diffNumberToDiffName(curDifficulty)));
-		difficulty.offset.set(difficulty.width/2, difficulty.height/2);
+		difficulty.offset.set(difficulty.width / 2, difficulty.height / 2);
 		difficulty.antialiasing = true;
 
 		categoryTitle = new FlxBitmapText(FlxBitmapFont.fromMonospace(Paths.image("ui/resultFont"), Utils.resultsTextCharacters, FlxPoint.get(49, 62)));
@@ -431,32 +499,35 @@ class FreeplayState extends MusicBeatState
 		categoryTitle.screenCenter(X);
 		categoryTitle.y = 85;
 
-		miniArrowLeft = new FlxSprite(categoryTitle.x, categoryTitle.y + categoryTitle.height/2).loadGraphic(Paths.image("menu/freeplay/miniArrow"));
+		miniArrowLeft = new FlxSprite(categoryTitle.x, categoryTitle.y + categoryTitle.height / 2).loadGraphic(Paths.image("menu/freeplay/miniArrow"));
 		miniArrowLeft.x -= miniArrowLeft.width;
-		miniArrowLeft.y -= miniArrowLeft.height/2;
+		miniArrowLeft.y -= miniArrowLeft.height / 2;
 		miniArrowLeft.y -= 7;
 		miniArrowLeft.x -= 20;
 		miniArrowLeft.flipX = true;
 
-		miniArrowRight = new FlxSprite(categoryTitle.x + categoryTitle.width, categoryTitle.y + categoryTitle.height/2).loadGraphic(Paths.image("menu/freeplay/miniArrow"));
-		miniArrowRight.y -= miniArrowRight.height/2;
+		miniArrowRight = new FlxSprite(categoryTitle.x + categoryTitle.width,
+			categoryTitle.y + categoryTitle.height / 2).loadGraphic(Paths.image("menu/freeplay/miniArrow"));
+		miniArrowRight.y -= miniArrowRight.height / 2;
 		miniArrowRight.x += 20;
 		miniArrowRight.y -= 7;
 
 		difficultyStars = new DifficultyStars(953, 237);
 
-		//DJ STUFF
+		// DJ STUFF
 		dj = new DJCharacter(-9, 290, "bf", djIntroFinish);
 		dj.cameras = [camFreeplay];
 
-		if(transitionFromMenu){
+		if (transitionFromMenu)
+		{
 			dj.playAnim("intro", true);
 		}
-		else {
+		else
+		{
 			dj.playAnim("idle", true);
 		}
 
-		//ADDING STUFF
+		// ADDING STUFF
 		add(bg);
 		add(scrollingText);
 		add(flash);
@@ -481,7 +552,7 @@ class FreeplayState extends MusicBeatState
 		add(miniArrowLeft);
 		add(miniArrowRight);
 		add(categoryTitle);
-		
+
 		add(topBar);
 		add(freeplayText);
 
@@ -492,7 +563,8 @@ class FreeplayState extends MusicBeatState
 		updateAlbum(false);
 		updateSongDifficulty();
 
-		if(transitionFromMenu){
+		if (transitionFromMenu)
+		{
 			bg.x -= 1280;
 			flash.visible = true;
 			cover.x += 1280;
@@ -517,32 +589,45 @@ class FreeplayState extends MusicBeatState
 			album.angle = albumDummy.angle;
 
 			FlxTween.tween(bg, {x: 0}, transitionTime + FlxG.random.float(-randomVariation, randomVariation), {ease: transitionEase});
-			FlxTween.tween(cover, {x: cover.x-1280}, transitionTime + FlxG.random.float(-randomVariation, randomVariation), {ease: transitionEase});
+			FlxTween.tween(cover, {x: cover.x - 1280}, transitionTime + FlxG.random.float(-randomVariation, randomVariation), {ease: transitionEase});
 			FlxTween.tween(topBar, {y: 0}, transitionTime + FlxG.random.float(-randomVariation, randomVariation), {ease: transitionEase});
 			FlxTween.tween(freeplayText, {y: 16}, transitionTime + FlxG.random.float(-randomVariation, randomVariation), {ease: transitionEase});
-			FlxTween.tween(highscoreSprite, {x: highscoreSprite.x-1280}, transitionTime + FlxG.random.float(-randomVariation, randomVariation), {ease: transitionEase, startDelay: staggerTime});
-			FlxTween.tween(clearPercentSprite, {x: clearPercentSprite.x-1280}, transitionTime + FlxG.random.float(-randomVariation, randomVariation), {ease: transitionEase, startDelay: staggerTime*2});
-			FlxTween.tween(scoreDisplay, {x: scoreDisplay.x-1280}, transitionTime + FlxG.random.float(-randomVariation, randomVariation), {ease: transitionEase, startDelay: staggerTime*3});
-			FlxTween.tween(percentDisplay, {x: percentDisplay.x-1280}, transitionTime + FlxG.random.float(-randomVariation, randomVariation), {ease: transitionEase, startDelay: staggerTime*2});
-			FlxTween.tween(albumDummy, {x: albumPos, angle: 10}, transitionTime/1.1 + FlxG.random.float(-randomVariation, randomVariation), {ease: albumElasticOut});
-			FlxTween.tween(albumTitle, {x: albumTitle.x-1280}, transitionTime + FlxG.random.float(-randomVariation, randomVariation), {ease: transitionEase, startDelay: staggerTime});
-			FlxTween.tween(arrowLeft, {y: arrowLeft.y+720}, transitionTime + FlxG.random.float(-randomVariation, randomVariation), {ease: transitionEase, startDelay: staggerTime});
-			FlxTween.tween(arrowRight, {y: arrowRight.y+720}, transitionTime + FlxG.random.float(-randomVariation, randomVariation), {ease: transitionEase, startDelay: staggerTime});
-			FlxTween.tween(difficulty, {y: difficulty.y+720}, transitionTime + FlxG.random.float(-randomVariation, randomVariation), {ease: transitionEase, startDelay: staggerTime*2});
-			FlxTween.tween(categoryTitle, {y: categoryTitle.y+720}, transitionTime + FlxG.random.float(-randomVariation, randomVariation), {ease: transitionEase, startDelay: staggerTime*2});
-			FlxTween.tween(miniArrowLeft, {y: miniArrowLeft.y+720}, transitionTime + FlxG.random.float(-randomVariation, randomVariation), {ease: transitionEase, startDelay: staggerTime});
-			FlxTween.tween(miniArrowRight, {y: miniArrowRight.y+720}, transitionTime + FlxG.random.float(-randomVariation, randomVariation), {ease: transitionEase, startDelay: staggerTime});
+			FlxTween.tween(highscoreSprite, {x: highscoreSprite.x - 1280}, transitionTime + FlxG.random.float(-randomVariation, randomVariation),
+				{ease: transitionEase, startDelay: staggerTime});
+			FlxTween.tween(clearPercentSprite, {x: clearPercentSprite.x - 1280}, transitionTime + FlxG.random.float(-randomVariation, randomVariation),
+				{ease: transitionEase, startDelay: staggerTime * 2});
+			FlxTween.tween(scoreDisplay, {x: scoreDisplay.x - 1280}, transitionTime + FlxG.random.float(-randomVariation, randomVariation),
+				{ease: transitionEase, startDelay: staggerTime * 3});
+			FlxTween.tween(percentDisplay, {x: percentDisplay.x - 1280}, transitionTime + FlxG.random.float(-randomVariation, randomVariation),
+				{ease: transitionEase, startDelay: staggerTime * 2});
+			FlxTween.tween(albumDummy, {x: albumPos, angle: 10}, transitionTime / 1.1 + FlxG.random.float(-randomVariation, randomVariation),
+				{ease: albumElasticOut});
+			FlxTween.tween(albumTitle, {x: albumTitle.x - 1280}, transitionTime + FlxG.random.float(-randomVariation, randomVariation),
+				{ease: transitionEase, startDelay: staggerTime});
+			FlxTween.tween(arrowLeft, {y: arrowLeft.y + 720}, transitionTime + FlxG.random.float(-randomVariation, randomVariation),
+				{ease: transitionEase, startDelay: staggerTime});
+			FlxTween.tween(arrowRight, {y: arrowRight.y + 720}, transitionTime + FlxG.random.float(-randomVariation, randomVariation),
+				{ease: transitionEase, startDelay: staggerTime});
+			FlxTween.tween(difficulty, {y: difficulty.y + 720}, transitionTime + FlxG.random.float(-randomVariation, randomVariation),
+				{ease: transitionEase, startDelay: staggerTime * 2});
+			FlxTween.tween(categoryTitle, {y: categoryTitle.y + 720}, transitionTime + FlxG.random.float(-randomVariation, randomVariation),
+				{ease: transitionEase, startDelay: staggerTime * 2});
+			FlxTween.tween(miniArrowLeft, {y: miniArrowLeft.y + 720}, transitionTime + FlxG.random.float(-randomVariation, randomVariation),
+				{ease: transitionEase, startDelay: staggerTime});
+			FlxTween.tween(miniArrowRight, {y: miniArrowRight.y + 720}, transitionTime + FlxG.random.float(-randomVariation, randomVariation),
+				{ease: transitionEase, startDelay: staggerTime});
 
-			difficultyStars.tweenIn(transitionTime, 0, transitionEase, staggerTime*2);
+			difficultyStars.tweenIn(transitionTime, 0, transitionEase, staggerTime * 2);
 			tweenCapsulesOnScreen(transitionTime, randomVariation, staggerTime);
 		}
-		else{
+		else
+		{
 			djIntroFinish();
 		}
-
 	}
 
-	function fakeMainMenuSetup():Void{
+	function fakeMainMenuSetup():Void
+	{
 		var bg:FlxSprite = new FlxSprite(-80).loadGraphic(Paths.image('menu/menuBG'));
 		bg.scrollFactor.x = 0;
 		bg.scrollFactor.y = 0.18;
@@ -566,7 +651,7 @@ class FreeplayState extends MusicBeatState
 		{
 			var menuItem:FlxSprite = new FlxSprite(0, 60 + (i * 160));
 			menuItem.frames = Paths.getSparrowAtlas("menu/main/" + MainMenuState.optionShit[i]);
-			
+
 			menuItem.animation.addByPrefix('idle', "idle", 24);
 			menuItem.animation.addByPrefix('selected', "selected", 24);
 			menuItem.animation.play('idle');
@@ -584,24 +669,31 @@ class FreeplayState extends MusicBeatState
 		versionText.cameras = [camMenu];
 		add(versionText);
 
-		menuItems.forEach(function(spr:FlxSprite){
+		menuItems.forEach(function(spr:FlxSprite)
+		{
 			spr.animation.play('idle');
-	
-			if (spr.ID == 1){
+
+			if (spr.ID == 1)
+			{
 				spr.animation.play('selected');
 				camTarget.set(spr.getGraphicMidpoint().x, spr.getGraphicMidpoint().y);
-				if(!transitionFromMenu){
+				if (!transitionFromMenu)
+				{
 					camFollow.setPosition(spr.getGraphicMidpoint().x, spr.getGraphicMidpoint().y);
 				}
 			}
-	
+
 			spr.updateHitbox();
 			spr.screenCenter(X);
 		});
 	}
 
-	function djIntroFinish():Void{
-		if(transitionOver){ return; }
+	function djIntroFinish():Void
+	{
+		if (transitionOver)
+		{
+			return;
+		}
 
 		transitionOver = true;
 		startFreeplaySong();
@@ -613,11 +705,13 @@ class FreeplayState extends MusicBeatState
 		camFollow.x = camTarget.x;
 		camFollow.y = camTarget.y;
 	}
-	
-	function startFreeplaySong():Void{
+
+	function startFreeplaySong():Void
+	{
 		FlxG.sound.playMusic(Paths.music(freeplaySong), freeplaySongVolume);
 		Conductor.changeBPM(freeplaySongBpm);
-		FlxG.sound.music.onComplete = function(){ 
+		FlxG.sound.music.onComplete = function()
+		{
 			lastStep = -Conductor.stepCrochet;
 		}
 		lastBeat = 0;
@@ -628,8 +722,9 @@ class FreeplayState extends MusicBeatState
 		curBeat = 0;
 	}
 
-	//INITIAL TEXT
-	function setUpScrollingText():Void{
+	// INITIAL TEXT
+	function setUpScrollingText():Void
+	{
 		scrollingTextStuff = [];
 
 		scrollingTextStuff.push({
@@ -687,8 +782,9 @@ class FreeplayState extends MusicBeatState
 		});
 	}
 
-	//CHANGED TEXT
-	function setUpScrollingTextAccept():Void{
+	// CHANGED TEXT
+	function setUpScrollingTextAccept():Void
+	{
 		scrollingTextStuff = [];
 
 		scrollingTextStuff.push({
@@ -746,72 +842,88 @@ class FreeplayState extends MusicBeatState
 		});
 	}
 
-	function addScrollingText():Void{
-
-		scrollingText.forEachExists(function(text){ text.destroy(); });
+	function addScrollingText():Void
+	{
+		scrollingText.forEachExists(function(text)
+		{
+			text.destroy();
+		});
 		scrollingText.clear();
 
-		for(x in scrollingTextStuff){
+		for (x in scrollingTextStuff)
+		{
 			var tempText = new FlxText(0, 0, 0, x.text);
 			tempText.setFormat(x.font, x.size, x.color);
 
 			var scrolling:FlxBackdrop = ScrollingText.createScrollingText(x.position.x, x.position.y, tempText);
 			scrolling.velocity.x = x.velocity * 60;
-			
+
 			scrollingText.add(scrolling);
 		}
-		
 	}
 
-	function addSong(_song:String, _icon:String, _week:Int, ?categories:Array<String>):Void{
-
+	function addSong(_song:String, _icon:String, _week:Int, ?categories:Array<String>):Void
+	{
 		var meta = {
 			name: _song.replace("-", ""),
 			artist: "",
 			album: "vol1",
 			difficulties: [0, 0, 0]
 		}
-		if(Utils.exists("assets/data/" + _song.toLowerCase() + "/meta.json")){
+		if (Utils.exists("assets/data/" + _song.toLowerCase() + "/meta.json"))
+		{
 			meta = Json.parse(Utils.getText("assets/data/" + _song.toLowerCase() + "/meta.json"));
 		}
 
-		if(categories == null){ categories = ["All"]; }
+		if (categories == null)
+		{
+			categories = ["All"];
+		}
 		var capsule:Capsule = new Capsule(_song, meta.name, _icon, _week, meta.album, meta.difficulties);
-		for(cat in categories){
+		for (cat in categories)
+		{
 			createCategory(cat);
 			categoryMap[cat].push(capsule);
 		}
 	}
 
-	function createCategory(name:String):Void{
-		if(!categoryMap.exists(name)){
+	function createCategory(name:String):Void
+	{
+		if (!categoryMap.exists(name))
+		{
 			categoryNames.push(name);
 			categoryMap.set(name, []);
 		}
 	}
 
-	function addCapsules():Void{
+	function addCapsules():Void
+	{
 		capsuleGroup.clear();
-		for(i in 0...categoryMap[categoryNames[curCategory]].length){
+		for (i in 0...categoryMap[categoryNames[curCategory]].length)
+		{
 			updateCapsulePosition(i);
 			categoryMap[categoryNames[curCategory]][i].snapToTargetPos();
 			categoryMap[categoryNames[curCategory]][i].showRank(curDifficulty);
-			//categoryMap[categoryNames[curCategory]][i].deslect();
+			// categoryMap[categoryNames[curCategory]][i].deslect();
 			capsuleGroup.add(categoryMap[categoryNames[curCategory]][i]);
 		}
 	}
 
-	function updateCapsulePosition(index:Int):Void{
+	function updateCapsulePosition(index:Int):Void
+	{
 		categoryMap[categoryNames[curCategory]][index].targetPos.x = categoryMap[categoryNames[curCategory]][index].intendedX(index - curSelected);
 		categoryMap[categoryNames[curCategory]][index].targetPos.y = categoryMap[categoryNames[curCategory]][index].intendedY(index - curSelected);
 	}
 
-	function changeSelected(change:Int):Void{
+	function changeSelected(change:Int):Void
+	{
 		curSelected += change;
-		if(curSelected < 0){
-			curSelected = categoryMap[categoryNames[curCategory]].length-1;
+		if (curSelected < 0)
+		{
+			curSelected = categoryMap[categoryNames[curCategory]].length - 1;
 		}
-		else if(curSelected >= categoryMap[categoryNames[curCategory]].length){
+		else if (curSelected >= categoryMap[categoryNames[curCategory]].length)
+		{
 			curSelected = 0;
 		}
 
@@ -821,16 +933,20 @@ class FreeplayState extends MusicBeatState
 		updateSongDifficulty();
 	}
 
-	function changeDifficulty(change:Int):Void{
+	function changeDifficulty(change:Int):Void
+	{
 		curDifficulty += change;
-		if(curDifficulty < 0){
+		if (curDifficulty < 0)
+		{
 			curDifficulty = 2;
 		}
-		else if(curDifficulty > 2){
+		else if (curDifficulty > 2)
+		{
 			curDifficulty = 0;
 		}
 
-		if(!allowedDifficulties.contains(curDifficulty)){
+		if (!allowedDifficulties.contains(curDifficulty))
+		{
 			changeDifficulty(Utils.sign(change));
 			return;
 		}
@@ -842,43 +958,51 @@ class FreeplayState extends MusicBeatState
 		difficulty.y -= 15;
 		FlxTween.tween(difficulty, {y: difficulty.y + 15}, 0.1, {ease: FlxEase.cubeOut});
 
-		for(capsule in capsuleGroup){
+		for (capsule in capsuleGroup)
+		{
 			capsule.showRank(curDifficulty);
-			//capsule.deslect();
+			// capsule.deslect();
 		}
 
 		updateScore();
 	}
 
-	function updateDifficultyGraphic():Void{
+	function updateDifficultyGraphic():Void
+	{
 		var prefix = "";
-		if(categoryMap[categoryNames[curCategory]][curSelected].song.endsWith("-Erect")){
+		if (categoryMap[categoryNames[curCategory]][curSelected].song.endsWith("-Erect"))
+		{
 			prefix = "erect/";
 		}
 
-		if(!Utils.exists(Paths.image("menu/freeplay/diff/" + prefix + diffNumberToDiffName(curDifficulty), true))){
+		if (!Utils.exists(Paths.image("menu/freeplay/diff/" + prefix + diffNumberToDiffName(curDifficulty), true)))
+		{
 			prefix = "";
 		}
 
-		if(Utils.exists(Paths.xml("menu/freeplay/diff/" + prefix + diffNumberToDiffName(curDifficulty)))){
+		if (Utils.exists(Paths.xml("menu/freeplay/diff/" + prefix + diffNumberToDiffName(curDifficulty))))
+		{
 			difficulty.frames = Paths.getSparrowAtlas("menu/freeplay/diff/" + prefix + diffNumberToDiffName(curDifficulty));
 			difficulty.animation.addByPrefix("idle", "", 24, true);
 			difficulty.animation.play("idle");
 		}
-		else{
+		else
+		{
 			difficulty.loadGraphic(Paths.image("menu/freeplay/diff/" + prefix + diffNumberToDiffName(curDifficulty)));
 		}
 
-		difficulty.offset.set(difficulty.width/2, difficulty.height/2);
+		difficulty.offset.set(difficulty.width / 2, difficulty.height / 2);
 	}
 
-
-	function changeCategory(change:Int):Void{
+	function changeCategory(change:Int):Void
+	{
 		curCategory += change;
-		if(curCategory < 0){
-			curCategory = categoryNames.length-1;
+		if (curCategory < 0)
+		{
+			curCategory = categoryNames.length - 1;
 		}
-		else if(curCategory >= categoryNames.length){
+		else if (curCategory >= categoryNames.length)
+		{
 			curCategory = 0;
 		}
 
@@ -903,63 +1027,87 @@ class FreeplayState extends MusicBeatState
 		updateAlbum();
 		addCapsules();
 		updateSongDifficulty();
-		tweenCapsulesOnScreen(transitionTime/2, randomVariation/2, staggerTime, 400);
+		tweenCapsulesOnScreen(transitionTime / 2, randomVariation / 2, staggerTime, 400);
 	}
 
-	function updateScore():Void{
+	function updateScore():Void
+	{
 		var score:SongStats = categoryMap[categoryNames[curCategory]][curSelected].highscoreData[curDifficulty];
 
-		if(prevScore != score.score){
+		if (prevScore != score.score)
+		{
 			scoreDisplay.tweenNumber(score.score, 0.8);
 			prevScore = score.score;
 		}
-		
-		if(prevAccuracy != Math.floor(score.accuracy)){
+
+		if (prevAccuracy != Math.floor(score.accuracy))
+		{
 			percentDisplay.tweenNumber(Math.floor(score.accuracy), 0.8);
 			prevAccuracy = Math.floor(score.accuracy);
 		}
 
-		for(i in 0...categoryMap[categoryNames[curCategory]].length){
+		for (i in 0...categoryMap[categoryNames[curCategory]].length)
+		{
 			categoryMap[categoryNames[curCategory]][i].deslect();
-			if(i == curSelected){
+			if (i == curSelected)
+			{
 				categoryMap[categoryNames[curCategory]][i].select();
 			}
 		}
 	}
 
-	function updateAlbum(?doTween:Bool = true):Void{
+	function updateAlbum(?doTween:Bool = true):Void
+	{
 		var newAlbum:String = categoryMap[categoryNames[curCategory]][curSelected].album;
-		if(newAlbum != curAlbum){
+		if (newAlbum != curAlbum)
+		{
 			curAlbum = newAlbum;
 			album.loadGraphic(Paths.image("menu/freeplay/album/" + curAlbum + "/album"));
 			albumTitle.loadGraphic(Paths.image("menu/freeplay/album/" + curAlbum + "/title"));
 
-			if(doTween){
+			if (doTween)
+			{
 				FlxTween.completeTweensOf(albumDummy);
 				FlxTween.completeTweensOf(albumTitle);
 				albumDummy.y -= 15;
 				albumTitle.y -= 20;
 				FlxTween.tween(albumTitle, {y: albumTitle.y + 20}, 0.2, {ease: FlxEase.cubeOut});
-				FlxTween.tween(albumDummy, {y: albumDummy.y + 15}, 0.1, {ease: FlxEase.cubeOut, onUpdate: function(t) {
-					albumTime = ablumPeriod;
-				}});
+				FlxTween.tween(albumDummy, {y: albumDummy.y + 15}, 0.1, {
+					ease: FlxEase.cubeOut,
+					onUpdate: function(t)
+					{
+						albumTime = ablumPeriod;
+					}
+				});
 			}
 		}
 	}
 
-	function updateSongDifficulty():Void{
+	function updateSongDifficulty():Void
+	{
 		difficultyStars.setNumber(categoryMap[categoryNames[curCategory]][curSelected].difficulties[curDifficulty]);
 	}
 
-	function calcAvailableDifficulties():Void{
+	function calcAvailableDifficulties():Void
+	{
 		allowedDifficulties = [];
 		var filesInDir = FileSystem.readDirectory("assets/data/" + categoryMap[categoryNames[curCategory]][curSelected].song.toLowerCase() + "/");
 
-		if(filesInDir.contains(categoryMap[categoryNames[curCategory]][curSelected].song.toLowerCase() + "-easy.json")){ allowedDifficulties.push(0); }
-		if(filesInDir.contains(categoryMap[categoryNames[curCategory]][curSelected].song.toLowerCase() + ".json")){ allowedDifficulties.push(1); }
-		if(filesInDir.contains(categoryMap[categoryNames[curCategory]][curSelected].song.toLowerCase() + "-hard.json")){ allowedDifficulties.push(2); }
+		if (filesInDir.contains(categoryMap[categoryNames[curCategory]][curSelected].song.toLowerCase() + "-easy.json"))
+		{
+			allowedDifficulties.push(0);
+		}
+		if (filesInDir.contains(categoryMap[categoryNames[curCategory]][curSelected].song.toLowerCase() + ".json"))
+		{
+			allowedDifficulties.push(1);
+		}
+		if (filesInDir.contains(categoryMap[categoryNames[curCategory]][curSelected].song.toLowerCase() + "-hard.json"))
+		{
+			allowedDifficulties.push(2);
+		}
 
-		if(!allowedDifficulties.contains(curDifficulty)){
+		if (!allowedDifficulties.contains(curDifficulty))
+		{
 			curDifficulty = 0;
 			changeDifficulty(allowedDifficulties[0]);
 		}
@@ -967,8 +1115,10 @@ class FreeplayState extends MusicBeatState
 		updateDifficultyGraphic();
 	}
 
-	function diffNumberToDiffName(diff:Int):String{
-		switch(diff){
+	function diffNumberToDiffName(diff:Int):String
+	{
+		switch (diff)
+		{
 			case 0:
 				return "easy";
 			case 1:
@@ -979,7 +1129,8 @@ class FreeplayState extends MusicBeatState
 		return "normal";
 	}
 
-	function startSong():Void{
+	function startSong():Void
+	{
 		var formattedSong:String = Highscore.formatSong(categoryMap[categoryNames[curCategory]][curSelected].song.toLowerCase(), curDifficulty);
 		PlayState.SONG = Song.loadFromJson(formattedSong, categoryMap[categoryNames[curCategory]][curSelected].song.toLowerCase());
 		PlayState.isStoryMode = false;
@@ -987,51 +1138,81 @@ class FreeplayState extends MusicBeatState
 		PlayState.loadEvents = true;
 		PlayState.returnLocation = "freeplay";
 		PlayState.storyWeek = categoryMap[categoryNames[curCategory]][curSelected].week;
-		new FlxTimer().start(1.5, function(t){
+		new FlxTimer().start(1.5, function(t)
+		{
 			switchState(new PlayState());
 			FlxG.sound.music.fadeOut(0.5);
 		});
 	}
 
-	function tweenCapsulesOnScreen(_transitionTime:Float, _randomVariation:Float, _staggerTime:Float, ?_distance:Float = 1000):Void{
-		for(i in 0...categoryMap[categoryNames[curCategory]].length){
+	function tweenCapsulesOnScreen(_transitionTime:Float, _randomVariation:Float, _staggerTime:Float, ?_distance:Float = 1000):Void
+	{
+		for (i in 0...categoryMap[categoryNames[curCategory]].length)
+		{
 			FlxTween.cancelTweensOf(categoryMap[categoryNames[curCategory]][i]);
 			categoryMap[categoryNames[curCategory]][i].xPositionOffset = _distance;
 			categoryMap[categoryNames[curCategory]][i].snapToTargetPos();
-			FlxTween.tween(categoryMap[categoryNames[curCategory]][i], {xPositionOffset: 0}, _transitionTime + FlxG.random.float(-_randomVariation, _randomVariation), {ease: transitionEase, startDelay: Utils.clamp((_staggerTime/4) * (i+1-curSelected), 0, 100) });
+			FlxTween.tween(categoryMap[categoryNames[curCategory]][i], {xPositionOffset: 0},
+				_transitionTime + FlxG.random.float(-_randomVariation, _randomVariation),
+				{ease: transitionEase, startDelay: Utils.clamp((_staggerTime / 4) * (i + 1 - curSelected), 0, 100)});
 		}
 	}
 
-	function tweenCapsulesOffScreen(_transitionTime:Float, _randomVariation:Float, _staggerTime:Float, ?_distance:Float = 1000):Void{
-		for(i in 0...categoryMap[categoryNames[curCategory]].length){
+	function tweenCapsulesOffScreen(_transitionTime:Float, _randomVariation:Float, _staggerTime:Float, ?_distance:Float = 1000):Void
+	{
+		for (i in 0...categoryMap[categoryNames[curCategory]].length)
+		{
 			FlxTween.cancelTweensOf(categoryMap[categoryNames[curCategory]][i]);
-			FlxTween.tween(categoryMap[categoryNames[curCategory]][i], {xPositionOffset: _distance}, _transitionTime + FlxG.random.float(-_randomVariation, _randomVariation), {ease: transitionEaseExit, startDelay: Utils.clamp((_staggerTime/4) * (i+1-curSelected), 0, 100) });
+			FlxTween.tween(categoryMap[categoryNames[curCategory]][i], {xPositionOffset: _distance},
+				_transitionTime + FlxG.random.float(-_randomVariation, _randomVariation),
+				{ease: transitionEaseExit, startDelay: Utils.clamp((_staggerTime / 4) * (i + 1 - curSelected), 0, 100)});
 		}
 	}
 
-	function exitAnimation():Void{
-		FlxTween.tween(bg, {x: bg.x-1280}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit), {ease: transitionEaseExit, startDelay: staggerTimeExit*3});
-		FlxTween.tween(cover, {x: cover.x+1280}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit), {ease: transitionEaseExit, startDelay: staggerTimeExit*3});
-		FlxTween.tween(dj, {x: dj.x-1280}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit), {ease: transitionEaseExit, startDelay: staggerTimeExit*1});
-		FlxTween.tween(topBar, {y: -720}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit), {ease: transitionEaseExit, startDelay: staggerTimeExit*3});
-		FlxTween.tween(freeplayText, {y: 16-720}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit), {ease: transitionEaseExit, startDelay: staggerTimeExit*3});
-		FlxTween.tween(highscoreSprite, {x: highscoreSprite.x+1280}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit), {ease: transitionEaseExit, startDelay: staggerTimeExit*2});
-		FlxTween.tween(clearPercentSprite, {x: clearPercentSprite.x+1280}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit), {ease: transitionEaseExit, startDelay: staggerTimeExit*1});
-		FlxTween.tween(scoreDisplay, {x: scoreDisplay.x+1280}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit), {ease: transitionEaseExit, startDelay: staggerTimeExit*0});
-		FlxTween.tween(percentDisplay, {x: percentDisplay.x+1280}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit), {ease: transitionEaseExit, startDelay: staggerTimeExit*1});
-		FlxTween.tween(albumDummy, {x: 1380, angle: 70}, transitionTimeExit/1.1 + FlxG.random.float(-randomVariationExit, randomVariationExit), {ease: albumElasticOut, startDelay: staggerTimeExit*3});
-		FlxTween.tween(albumTitle, {x: albumTitle.x+1280}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit), {ease: transitionEaseExit, startDelay: staggerTimeExit*2});
-		FlxTween.tween(arrowLeft, {y: arrowLeft.y-720}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit), {ease: transitionEaseExit, startDelay: staggerTimeExit*1});
-		FlxTween.tween(arrowRight, {y: arrowRight.y-720}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit), {ease: transitionEaseExit, startDelay: staggerTimeExit*1});
-		FlxTween.tween(difficulty, {y: difficulty.y-720}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit), {ease: transitionEaseExit, startDelay: staggerTimeExit*2});
-		FlxTween.tween(categoryTitle, {y: categoryTitle.y-720}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit), {ease: transitionEaseExit, startDelay: staggerTimeExit*2});
-		FlxTween.tween(miniArrowLeft, {y: miniArrowLeft.y-720}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit), {ease: transitionEaseExit, startDelay: staggerTimeExit*1});
-		FlxTween.tween(miniArrowRight, {y: miniArrowRight.y-720}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit), {ease: transitionEaseExit, startDelay: staggerTimeExit*1});
-		
+	function exitAnimation():Void
+	{
+		FlxTween.tween(bg, {x: bg.x - 1280}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit),
+			{ease: transitionEaseExit, startDelay: staggerTimeExit * 3});
+		FlxTween.tween(cover, {x: cover.x + 1280}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit),
+			{ease: transitionEaseExit, startDelay: staggerTimeExit * 3});
+		FlxTween.tween(dj, {x: dj.x - 1280}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit),
+			{ease: transitionEaseExit, startDelay: staggerTimeExit * 1});
+		FlxTween.tween(topBar, {y: -720}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit),
+			{ease: transitionEaseExit, startDelay: staggerTimeExit * 3});
+		FlxTween.tween(freeplayText, {y: 16 - 720}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit),
+			{ease: transitionEaseExit, startDelay: staggerTimeExit * 3});
+		FlxTween.tween(highscoreSprite, {x: highscoreSprite.x + 1280}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit),
+			{ease: transitionEaseExit, startDelay: staggerTimeExit * 2});
+		FlxTween.tween(clearPercentSprite, {x: clearPercentSprite.x + 1280},
+			transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit), {ease: transitionEaseExit, startDelay: staggerTimeExit * 1});
+		FlxTween.tween(scoreDisplay, {x: scoreDisplay.x + 1280}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit),
+			{ease: transitionEaseExit, startDelay: staggerTimeExit * 0});
+		FlxTween.tween(percentDisplay, {x: percentDisplay.x + 1280}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit),
+			{ease: transitionEaseExit, startDelay: staggerTimeExit * 1});
+		FlxTween.tween(albumDummy, {x: 1380, angle: 70}, transitionTimeExit / 1.1 + FlxG.random.float(-randomVariationExit, randomVariationExit),
+			{ease: albumElasticOut, startDelay: staggerTimeExit * 3});
+		FlxTween.tween(albumTitle, {x: albumTitle.x + 1280}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit),
+			{ease: transitionEaseExit, startDelay: staggerTimeExit * 2});
+		FlxTween.tween(arrowLeft, {y: arrowLeft.y - 720}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit),
+			{ease: transitionEaseExit, startDelay: staggerTimeExit * 1});
+		FlxTween.tween(arrowRight, {y: arrowRight.y - 720}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit),
+			{ease: transitionEaseExit, startDelay: staggerTimeExit * 1});
+		FlxTween.tween(difficulty, {y: difficulty.y - 720}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit),
+			{ease: transitionEaseExit, startDelay: staggerTimeExit * 2});
+		FlxTween.tween(categoryTitle, {y: categoryTitle.y - 720}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit),
+			{ease: transitionEaseExit, startDelay: staggerTimeExit * 2});
+		FlxTween.tween(miniArrowLeft, {y: miniArrowLeft.y - 720}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit),
+			{ease: transitionEaseExit, startDelay: staggerTimeExit * 1});
+		FlxTween.tween(miniArrowRight, {y: miniArrowRight.y - 720}, transitionTimeExit + FlxG.random.float(-randomVariationExit, randomVariationExit),
+			{ease: transitionEaseExit, startDelay: staggerTimeExit * 1});
+
 		difficultyStars.tweenOut(transitionTimeExit, 0, transitionEaseExit, staggerTimeExit);
 		tweenCapsulesOffScreen(transitionTimeExit, randomVariationExit, staggerTimeExit);
 
-		scrollingText.forEachExists(function(text){ text.destroy(); });
+		scrollingText.forEachExists(function(text)
+		{
+			text.destroy();
+		});
 		scrollingText.clear();
 		FlxTween.completeTweensOf(flash);
 		flash.alpha = 1;
@@ -1039,9 +1220,12 @@ class FreeplayState extends MusicBeatState
 		FlxTween.tween(flash, {alpha: 0}, 0.5, {startDelay: 0.1});
 	}
 
-	inline function albumElasticOut(t:Float):Float{
+	inline function albumElasticOut(t:Float):Float
+	{
 		var ELASTIC_AMPLITUDE:Float = 1;
 		var ELASTIC_PERIOD:Float = 0.6;
-		return (ELASTIC_AMPLITUDE * Math.pow(2, -10 * t) * Math.sin((t - (ELASTIC_PERIOD / (2 * Math.PI) * Math.asin(1 / ELASTIC_AMPLITUDE))) * (2 * Math.PI) / ELASTIC_PERIOD) + 1);
+		return (ELASTIC_AMPLITUDE * Math.pow(2,
+			-10 * t) * Math.sin((t - (ELASTIC_PERIOD / (2 * Math.PI) * Math.asin(1 / ELASTIC_AMPLITUDE))) * (2 * Math.PI) / ELASTIC_PERIOD)
+			+ 1);
 	}
 }
